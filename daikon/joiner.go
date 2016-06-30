@@ -72,7 +72,7 @@ func (j *Joiner) Run() {
 			j.Logger.Print("[JOINER] tracker.expected: ", tracker.expected)
 			if tracker.expected == tracker.current {
 				j.Logger.Print("[JOINER] expected == current")
-				go j.Join(part.Name, tracker.expected)
+				go j.join(part.Name, tracker.expected)
 			}
 		default:
 			time.Sleep(100 * time.Millisecond)
@@ -80,7 +80,7 @@ func (j *Joiner) Run() {
 	}
 }
 
-func (j *Joiner) Join(filename string, count int) {
+func (j *Joiner) join(filename string, count int) {
 	fullFilename := filepath.Join(j.DownloadPath, filename)
 	fullFile, err := os.Create(fullFilename)
 
