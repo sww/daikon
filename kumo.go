@@ -36,6 +36,14 @@ func main() {
 	logger := dumblog.DumbLog{Debug: *debug}
 	wait := new(sync.WaitGroup)
 
+	// Make sure root directories are there.
+	_, err = os.Stat(config.Temp)
+	if err != nil {
+		if os.Mkdir(config.Temp, 0775) != nil {
+			log.Fatalf("Cannot make temp directory %v", config.Temp)
+		}
+	}
+
 	for i := 0; i < len(files); i++ {
 		download, err := kumo.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, wait)
 		if err != nil {
