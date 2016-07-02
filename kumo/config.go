@@ -1,4 +1,4 @@
-package daikon
+package kumo
 
 import (
 	"encoding/json"

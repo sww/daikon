@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"./daikon"
+	"./kumo"
 	"github.com/sww/dumblog"
 )
 
@@ -23,7 +23,7 @@ func main() {
 		log.Fatal("Error opening config file: %v\n", err)
 	}
 
-	config, err := daikon.GetConfig(configFile)
+	config, err := kumo.GetConfig(configFile)
 	if err != nil {
 		log.Fatalf("Error reading config: %v\n", err)
 	}
@@ -37,13 +37,13 @@ func main() {
 	wait := new(sync.WaitGroup)
 
 	for i := 0; i < len(files); i++ {
-		download, err := daikon.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, wait)
+		download, err := kumo.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, wait)
 		if err != nil {
 			log.Fatalf("Failed to InitDownload, with error: %v\n", err)
 		}
 
-		decode := daikon.InitDecode(wait)
-		join := daikon.InitJoiner(wait)
+		decode := kumo.InitDecode(wait)
+		join := kumo.InitJoiner(wait)
 
 		download.DecodeQueue = decode.Queue
 		decode.JoinQueue = join.Queue
@@ -52,7 +52,7 @@ func main() {
 		decode.Logger = &logger
 		join.Logger = &logger
 
-		progress := daikon.InitProgress()
+		progress := kumo.InitProgress()
 		download.Progress = progress
 
 		go download.Run()
@@ -65,7 +65,7 @@ func main() {
 			continue
 		}
 
-		nzb, err := daikon.Parse(nf)
+		nzb, err := kumo.Parse(nf)
 
 		if err != nil {
 			log.Fatalf("[MAIN] Failed to parse file \"%v\", with error %v\n", filename, err)

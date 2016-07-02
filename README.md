@@ -1,4 +1,4 @@
-daikon
+kumo
 ===
 
 A simple NZB downloader.
