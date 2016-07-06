@@ -12,7 +12,7 @@ import (
 	"github.com/sww/yenc"
 )
 
-type Tracker struct {
+type fileTracker struct {
 	expected int
 	current  int
 }
@@ -21,7 +21,7 @@ type Joiner struct {
 	DownloadPath string
 	Stop         chan bool
 	Queue        chan *yenc.Part
-	Map          map[string]*Tracker
+	Map          map[string]*fileTracker
 	Logger       *dumblog.DumbLog
 	TempPath     string
 	Wait         *sync.WaitGroup
@@ -30,7 +30,7 @@ type Joiner struct {
 func InitJoiner(w *sync.WaitGroup) *Joiner {
 	return &Joiner{
 		DownloadPath: "",
-		Map:          make(map[string]*Tracker),
+		Map:          make(map[string]*fileTracker),
 		Queue:        make(chan *yenc.Part),
 		Stop:         make(chan bool, 1),
 		Wait:         w,
@@ -54,7 +54,7 @@ func (j *Joiner) Run() {
 			if !exists {
 				j.Logger.Print("[JOINER] Part not in Map")
 
-				tracker = new(Tracker)
+				tracker = new(fileTracker)
 				tracker.current = 0
 				j.Map[part.Name] = tracker
 			}
