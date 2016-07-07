@@ -136,7 +136,11 @@ func (p *Progress) etaString() string {
 }
 
 func (p *Progress) percentage() string {
-	return fmt.Sprintf("%.1f%%", (float64(p.Current)/float64(p.Total))*100)
+	percentage := 0.0
+	if p.Total > 0 {
+		percentage = (float64(p.Current) / float64(p.Total))
+	}
+	return fmt.Sprintf("%.1f%%", percentage*100)
 }
 
 func (p *Progress) printProgress(prefix, current, total, speed, percent, separator, _time string) {
