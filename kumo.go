@@ -62,6 +62,7 @@ func main() {
 
 		progress := kumo.InitProgress()
 		download.Progress = progress
+		decode.Progress = progress
 
 		go download.Run()
 		go decode.Run()
@@ -116,6 +117,7 @@ func main() {
 
 		logger.Print("[MAIN] Waiting")
 		wait.Wait()
+		progress.Done = true
 		progress.Wait.Wait()
 
 		os.RemoveAll(decode.TempPath)

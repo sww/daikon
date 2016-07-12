@@ -83,12 +83,14 @@ func secondsToHuman(interval int) string {
 }
 
 type Progress struct {
-	Current int
-	Total   int
-	Wait    *sync.WaitGroup
-	Stop    chan bool
-	mu      sync.Mutex
-	start   int64
+	Current  int
+	Total    int
+	Wait     *sync.WaitGroup
+	Stop     chan bool
+	Done     bool
+	isBroken bool
+	mu       sync.Mutex
+	start    int64
 }
 
 func InitProgress() *Progress {
@@ -171,10 +173,14 @@ func (p *Progress) Run() {
 		default:
 		}
 
-		if p.Total > 0 && p.Current >= p.Total {
+		if p.Total > 0 && p.Current >= p.Total && p.Done {
 			total := ByteSize(p.Total).String()
+			prefix := "✔"
+			if p.isBroken {
+				prefix = "✘"
+			}
 			// ✔ 396.86KB/396.86KB 30.53KB/s 100% ↯ 32s
-			p.printProgress("✔", total, total, ByteSize(p.speed()).String(), "100%", "↯", secondsToHuman(p.elapsed()))
+			p.printProgress(prefix, total, total, ByteSize(p.speed()).String(), "100%", "↯", secondsToHuman(p.elapsed()))
 			fmt.Println()
 			return
 		}

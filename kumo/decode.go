@@ -2,9 +2,11 @@ package kumo
 
 import (
 	"fmt"
+	"hash/crc32"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +17,7 @@ import (
 type Decode struct {
 	JoinQueue chan *yenc.Part
 	Logger    *dumblog.DumbLog
+	Progress  *Progress
 	Queue     chan string
 	Stop      chan bool
 	TempPath  string
@@ -54,6 +57,7 @@ func (d *Decode) decode(filename string) {
 
 	part, err := yenc.Decode(file)
 	if err != nil {
+		d.Progress.isBroken = true
 		return
 	}
 
@@ -66,5 +70,16 @@ func (d *Decode) decode(filename string) {
 
 	d.Logger.Printf("[DECODE] Adding %v to JoinQueue", part.Name)
 
+	go func() {
+		if !checksum(part.Body, part.CRC32) {
+			d.Progress.isBroken = true
+		}
+	}()
+
 	d.JoinQueue <- part
+}
+
+func checksum(data []byte, expected string) bool {
+	h := fmt.Sprintf("%x", crc32.ChecksumIEEE(data))
+	return strings.EqualFold(h, expected)
 }
