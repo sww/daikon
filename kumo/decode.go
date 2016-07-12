@@ -59,11 +59,6 @@ func (d *Decode) decode(filename string) {
 
 	defer os.Remove(filename)
 
-	if err != nil {
-		d.Logger.Print("[DECODE] Done() because of err: ", err)
-		return
-	}
-
 	d.Logger.Print("[DECODE] Writing decoded file ", part.Name)
 
 	partFilename := filepath.Join(d.TempPath, fmt.Sprintf("%v.%v", part.Name, part.BeginPart))
