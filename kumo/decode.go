@@ -52,11 +52,13 @@ func (d *Decode) decode(filename string) {
 	defer file.Close()
 
 	if err != nil {
+		d.Logger.Printf("[DECODE] os.Open error %v", err)
 		return
 	}
 
 	part, err := yenc.Decode(file)
 	if err != nil {
+		d.Logger.Printf("[DECODE] yenc.Decode error %v", err)
 		d.Progress.isBroken = true
 		return
 	}
@@ -72,6 +74,7 @@ func (d *Decode) decode(filename string) {
 
 	go func() {
 		if !checksum(part.Body, part.CRC32) {
+			d.Logger.Print("[DECODE] Checksums did not match")
 			d.Progress.isBroken = true
 		}
 	}()
