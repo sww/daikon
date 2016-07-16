@@ -83,6 +83,6 @@ func (d *Decode) decode(filename string) {
 }
 
 func checksum(data []byte, expected string) bool {
-	h := fmt.Sprintf("%x", crc32.ChecksumIEEE(data))
+	h := fmt.Sprintf("%08x", crc32.ChecksumIEEE(data))
 	return strings.EqualFold(h, expected)
 }
