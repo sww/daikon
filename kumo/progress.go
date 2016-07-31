@@ -175,9 +175,9 @@ func (p *Progress) Run() {
 
 		if p.Total > 0 && p.Current >= p.Total && p.Done {
 			total := ByteSize(p.Total).String()
-			prefix := "✔"
+			prefix := "\033[32m✔\033[39m"
 			if p.isBroken {
-				prefix = "✘"
+				prefix = "\033[31m✘\033[39m"
 			}
 			// ✔ 396.86KB/396.86KB 30.53KB/s 100% ↯ 32s
 			p.printProgress(prefix, total, total, ByteSize(p.speed()).String(), "100%", "↯", secondsToHuman(p.elapsed()))
