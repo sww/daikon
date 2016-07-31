@@ -50,6 +50,7 @@ func (d *Download) Run() {
 				segmentName, err := d.download(segment, &connection)
 
 				if err != nil {
+					d.Progress.isBroken = true
 					d.Wait.Done()
 					d.Logger.Print("[DOWNLOAD] d.Wait.Done() because of err ", err)
 					return
