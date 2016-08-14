@@ -40,27 +40,33 @@ func (d *Decode) Run() {
 			return
 		case segment := <-d.Queue:
 			d.Logger.Printf("[DECODE] Decode got %v", segment)
-			go d.decode(segment)
+			go func() {
+				part, err := d.decode(segment)
+				if err != nil {
+					d.Progress.isBroken = true
+					d.Logger.Printf("[DECODE] d.Wait.Done() because of err:", err)
+					d.Wait.Done()
+				} else {
+					d.JoinQueue <- part
+				}
+			}()
 		default:
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
 
-func (d *Decode) decode(filename string) {
+func (d *Decode) decode(filename string) (*yenc.Part, error) {
 	file, err := os.Open(filename)
 	defer file.Close()
 
 	if err != nil {
-		d.Logger.Printf("[DECODE] os.Open error %v", err)
-		return
+		return nil, err
 	}
 
 	part, err := yenc.Decode(file)
 	if err != nil {
-		d.Logger.Printf("[DECODE] yenc.Decode error %v", err)
-		d.Progress.isBroken = true
-		return
+		return nil, err
 	}
 
 	defer os.Remove(filename)
@@ -79,7 +85,7 @@ func (d *Decode) decode(filename string) {
 		}
 	}()
 
-	d.JoinQueue <- part
+	return part, nil
 }
 
 func checksum(data []byte, expected string) bool {
