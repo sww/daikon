@@ -11,6 +11,14 @@ import (
 	"time"
 )
 
+func red(text string) string {
+	return fmt.Sprintf("\033[31m%s\033[39m", text)
+}
+
+func green(text string) string {
+	return fmt.Sprintf("\033[32m%s\033[39m", text)
+}
+
 func getTermColumns() (int, error) {
 	cmd := exec.Command("stty", "size")
 	cmd.Stdin = os.Stdin
@@ -175,9 +183,9 @@ func (p *Progress) Run() {
 
 		if p.Total > 0 && p.Current >= p.Total && p.Done {
 			total := ByteSize(p.Total).String()
-			prefix := "\033[32m✔\033[39m"
+			prefix := green("✔")
 			if p.isBroken {
-				prefix = "\033[31m✘\033[39m"
+				prefix = red("✘")
 			}
 			// ✔ 396.86KB/396.86KB 30.53KB/s 100% ↯ 32s
 			p.printProgress(prefix, total, total, ByteSize(p.speed()).String(), "100%", "↯", secondsToHuman(p.elapsed()))
@@ -185,8 +193,13 @@ func (p *Progress) Run() {
 			return
 		}
 
+		prefix := "↳"
+		if p.isBroken {
+			prefix = red("↳")
+		}
+
 		// ↳ 146.92KB/396.86KB 13.36KB/s 37.0% ↦ 19s
-		p.printProgress("↳", ByteSize(p.Current).String(), ByteSize(p.Total).String(), ByteSize(p.speed()).String(), p.percentage(), "↦", p.etaString())
+		p.printProgress(prefix, ByteSize(p.Current).String(), ByteSize(p.Total).String(), ByteSize(p.speed()).String(), p.percentage(), "↦", p.etaString())
 
 		time.Sleep(1 * time.Second)
 	}
