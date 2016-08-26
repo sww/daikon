@@ -14,8 +14,13 @@ import (
 	"github.com/sww/yenc"
 )
 
+type DecodedPart struct {
+	*yenc.Part
+	SegmentName string
+}
+
 type Decode struct {
-	JoinQueue chan *yenc.Part
+	JoinQueue chan *DecodedPart
 	Logger    *dumblog.DumbLog
 	Progress  *Progress
 	Queue     chan string
@@ -39,15 +44,17 @@ func (d *Decode) Run() {
 			d.Logger.Print("[DECODE] Decode stopped")
 			return
 		case segment := <-d.Queue:
+			d.Wait.Add(1)
 			d.Logger.Printf("[DECODE] Decode got %v", segment)
 			go func() {
+				defer d.Wait.Done()
 				part, err := d.decode(segment)
 				if err != nil {
 					d.Progress.isBroken = true
-					d.Logger.Printf("[DECODE] d.Wait.Done() because of err:", err)
-					d.Wait.Done()
+					d.Logger.Printf("[DECODE] Decode err:", err)
 				} else {
-					d.JoinQueue <- part
+					_, segmentName := filepath.Split(segment)
+					d.JoinQueue <- &DecodedPart{part, segmentName}
 				}
 			}()
 		default:

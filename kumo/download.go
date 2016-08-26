@@ -44,6 +44,7 @@ func (d *Download) Run() {
 		case segment := <-d.Queue:
 			go func() {
 				defer d.Progress.Add(segment.Bytes)
+				defer d.Wait.Done()
 				d.Logger.Print("[DOWNLOAD] Download.Run() got segment ", segment.Segment)
 
 				connection := <-d.ConnectionPool.connections
@@ -51,8 +52,7 @@ func (d *Download) Run() {
 
 				if err != nil {
 					d.Progress.isBroken = true
-					d.Wait.Done()
-					d.Logger.Print("[DOWNLOAD] d.Wait.Done() because of err ", err)
+					d.Logger.Print("[DOWNLOAD] Download err ", err)
 					return
 				}
 
