@@ -37,14 +37,17 @@ func main() {
 	downloadWait := new(sync.WaitGroup)
 
 	// Make sure root directories are there.
-	_, err = os.Stat(config.Temp)
-	if err != nil {
+	if _, err = os.Stat(config.Temp); err != nil {
 		if os.Mkdir(config.Temp, 0775) != nil {
 			log.Fatalf("Cannot make temp directory %v", config.Temp)
 		}
 	}
 
-	for i := 0; i < len(files); i++ {
+	for _, filename := range(files) {
+		if _, err := os.Stat(filename); err != nil {
+			continue
+		}
+
 		download, err := kumo.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, downloadWait)
 		if err != nil {
 			log.Fatalf("Failed to InitDownload, with error: %v\n", err)
@@ -71,14 +74,12 @@ func main() {
 		go decode.Run()
 		go join.Run()
 
-		filename := files[i]
-		nf, err := os.Open(filename)
+		file, err := os.Open(filename)
 		if err != nil {
 			continue
 		}
 
-		nzb, err := kumo.Parse(nf)
-
+		nzb, err := kumo.Parse(file)
 		if err != nil {
 			log.Fatalf("[MAIN] Failed to parse file \"%v\", with error %v\n", filename, err)
 		}
@@ -99,23 +100,20 @@ func main() {
 		logger.Print("[MAIN] Creating download path: ", join.DownloadPath)
 		os.Mkdir(join.DownloadPath, 0775)
 
-		for j := 0; j < len(nzb.Files); j++ {
+		for _, nzbFiles := range(nzb.Files) {
 			logger.Printf("[MAIN] Size: %v", nzb.Size())
 
 			progress.Total = nzb.Size()
-
-			nzbFiles := nzb.Files[j]
 
 			numSegments := len(nzbFiles.Segments)
 			downloadWait.Add(numSegments)
 			logger.Print("[MAIN] Adding(", numSegments, ")")
 
-			for k := 0; k < numSegments; k++ {
-				s := nzbFiles.Segments[k]
-				logger.Print("[MAIN] Queuing", s)
-				join.SegmentMap[s.Segment] = numSegments
-				s.Group = nzbFiles.Groups[0]
-				download.Queue <- &s
+			for _, segment := range(nzbFiles.Segments) {
+				logger.Print("[MAIN] Queuing", segment)
+				join.SegmentMap[segment.Segment] = numSegments
+				segment.Group = nzbFiles.Groups[0]
+				download.Queue <- &segment
 			}
 		}
 
