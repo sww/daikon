@@ -25,6 +25,7 @@ type Joiner struct {
 	Logger       *dumblog.DumbLog
 	TempPath     string
 	Wait         *sync.WaitGroup
+	mu           sync.Mutex
 }
 
 func InitJoiner(w *sync.WaitGroup) *Joiner {
@@ -54,11 +55,15 @@ func (j *Joiner) Run() {
 				tracker = new(fileTracker)
 				tracker.current = 0
 				tracker.expected = j.SegmentMap[part.SegmentName]
+				j.mu.Lock()
 				j.Map[part.Name] = tracker
+				j.mu.Unlock()
 			}
 
+			j.mu.Lock()
 			delete(j.SegmentMap, part.SegmentName)
-
+			j.mu.Unlock()
+			
 			tracker.current++
 			j.Logger.Print("[JOINER] tracker.current: ", tracker.current, ", tracker.expected: ", tracker.expected)
 
@@ -97,7 +102,11 @@ func (j *Joiner) join(filename string, count int) {
 			j.Wait.Done()
 		}
 	}()
-	defer delete(j.Map, filename)
+	defer func() {
+		j.mu.Lock()
+		delete(j.Map, filename)
+		j.mu.Unlock()
+	}()
 
 	if err != nil {
 		j.Logger.Print("[JOINER] Create fullFile err: ", err)
