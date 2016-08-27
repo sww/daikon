@@ -12,7 +12,7 @@ import (
 
 type Download struct {
 	Stop           chan bool
-	Queue          chan *Segment
+	Queue          chan Segment
 	ConnectionPool ConnectionPool
 	DecodeQueue    chan string
 	Logger         *dumblog.DumbLog
@@ -29,7 +29,7 @@ func InitDownload(host, username, password string, port, connections int, w *syn
 
 	return &Download{
 		ConnectionPool: *connectionPool,
-		Queue:          make(chan *Segment),
+		Queue:          make(chan Segment),
 		Stop:           make(chan bool, 1),
 		Wait:           w,
 	}, nil
@@ -48,7 +48,7 @@ func (d *Download) Run() {
 				d.Logger.Print("[DOWNLOAD] Download.Run() got segment ", segment.Segment)
 
 				connection := <-d.ConnectionPool.connections
-				segmentName, err := d.download(segment, &connection)
+				segmentName, err := d.download(segment.Segment, segment.Group, &connection)
 
 				if err != nil {
 					d.Progress.isBroken = true
@@ -75,17 +75,17 @@ func group(group string, connection *Connection) error {
 	return nil
 }
 
-func (d *Download) download(segment *Segment, connection *Connection) (string, error) {
+func (d *Download) download(segmentName, segmentGroup string, connection *Connection) (string, error) {
 	defer func() { d.ConnectionPool.connections <- *connection }()
 
-	d.Logger.Print("[DOWNLOAD] Group: ", segment.Group)
-	if segment.Group != connection.group {
-		d.Logger.Printf("[DOWNLOAD] Switching from group %v to %v", connection.group, segment.Group)
+	d.Logger.Printf("[DOWNLOAD] download(%v)", segmentName)
+	if segmentGroup != connection.group {
+		d.Logger.Printf("[DOWNLOAD] Switching from group '%v' to '%v'", connection.group, segmentGroup)
 		// TODO: Handle error.
-		group(segment.Group, connection)
+		group(segmentGroup, connection)
 	}
 
-	_, _, resp, err := connection.client.Body(fmt.Sprintf("<%s>", segment.Segment))
+	_, _, resp, err := connection.client.Body(fmt.Sprintf("<%s>", segmentName))
 	if err != nil {
 		return "", err
 	}
@@ -95,7 +95,7 @@ func (d *Download) download(segment *Segment, connection *Connection) (string, e
 		return "", err
 	}
 
-	fullSegment := filepath.Join(d.TempPath, segment.Segment)
+	fullSegment := filepath.Join(d.TempPath, segmentName)
 	ioutil.WriteFile(fullSegment, msg, 0644)
 
 	d.Logger.Print("[DOWNLOAD] d.Download() wrote ", fullSegment)

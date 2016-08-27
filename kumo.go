@@ -113,7 +113,7 @@ func main() {
 				logger.Print("[MAIN] Queuing", segment)
 				join.SegmentMap[segment.Segment] = numSegments
 				segment.Group = nzbFiles.Groups[0]
-				download.Queue <- &segment
+				download.Queue <- segment
 			}
 		}
 
