@@ -15,6 +15,7 @@ import (
 func main() {
 	configName := flag.String("config", "config.json", "config file")
 	debug := flag.Bool("debug", false, "show debug statements")
+	quiet := flag.Bool("quiet", false, "hide the progress output")
 
 	flag.Parse()
 
@@ -93,7 +94,9 @@ func main() {
 		join.TempPath = filepath.Join(config.Temp, dirName)
 		join.DownloadPath = filepath.Join(config.Download, dirName)
 
-		go progress.Run()
+		if !*quiet {
+			go progress.Run()
+		}
 
 		logger.Print("[MAIN] Creating temp path: ", download.TempPath)
 		os.Mkdir(download.TempPath, 0775)
@@ -130,5 +133,7 @@ func main() {
 		os.RemoveAll(decode.TempPath)
 	}
 
-	println("⚑ All Done!")
+	if !*quiet {
+		println("⚑ All Done!")
+	}
 }
