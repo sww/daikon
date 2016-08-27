@@ -42,10 +42,10 @@ func (d *Download) Run() {
 			d.Logger.Print("Download Stopping")
 			return
 		case segment := <-d.Queue:
+			d.Logger.Print("[DOWNLOAD] Run() got segment ", segment)
 			go func() {
 				defer d.Progress.Add(segment.Bytes)
 				defer d.Wait.Done()
-				d.Logger.Print("[DOWNLOAD] Download.Run() got segment ", segment.Segment)
 
 				connection := <-d.ConnectionPool.connections
 				segmentName, err := d.download(segment.Segment, segment.Group, &connection)
@@ -98,7 +98,7 @@ func (d *Download) download(segmentName, segmentGroup string, connection *Connec
 	fullSegment := filepath.Join(d.TempPath, segmentName)
 	ioutil.WriteFile(fullSegment, msg, 0644)
 
-	d.Logger.Print("[DOWNLOAD] d.Download() wrote ", fullSegment)
+	d.Logger.Printf("[DOWNLOAD] download() wrote '%v'", fullSegment)
 
 	return fullSegment, nil
 }

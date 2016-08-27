@@ -60,8 +60,7 @@ func (j *Joiner) Run() {
 			delete(j.SegmentMap, part.SegmentName)
 
 			tracker.current++
-			j.Logger.Print("[JOINER] tracker.current: ", tracker.current)
-			j.Logger.Print("[JOINER] tracker.expected: ", tracker.expected)
+			j.Logger.Print("[JOINER] tracker.current: ", tracker.current, ", tracker.expected: ", tracker.expected)
 
 			if tracker.expected == tracker.current {
 				j.Logger.Print("[JOINER] expected == current")
@@ -74,6 +73,8 @@ func (j *Joiner) Run() {
 }
 
 func (j *Joiner) JoinAll() {
+	j.Logger.Print("[JOINER] JoinAll()")
+	j.Logger.Printf("[JOINER] j.Map: %+v", j.Map)
 	for k, tracker := range j.Map {
 		if tracker.current != tracker.expected {
 			// If a segment is broken, we call Done() before we get to join,
@@ -121,7 +122,7 @@ func (j *Joiner) join(filename string, count int) {
 		file, err := os.Open(partFilename)
 		if err != nil {
 			// Probably a missing segment, but continue...
-			j.Logger.Print(partFilename, "does not exist!")
+			j.Logger.Print("[JOINER] ", partFilename, " does not exist!")
 			continue
 		}
 

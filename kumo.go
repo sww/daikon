@@ -98,9 +98,9 @@ func main() {
 			go progress.Run()
 		}
 
-		logger.Print("[MAIN] Creating temp path: ", download.TempPath)
+		logger.Printf("[MAIN] Creating temp path: '%v'", download.TempPath)
 		os.Mkdir(download.TempPath, 0775)
-		logger.Print("[MAIN] Creating download path: ", join.DownloadPath)
+		logger.Printf("[MAIN] Creating download path: '%v'", join.DownloadPath)
 		os.Mkdir(join.DownloadPath, 0775)
 
 		for _, nzbFiles := range(nzb.Files) {
@@ -113,18 +113,20 @@ func main() {
 			logger.Print("[MAIN] Adding(", numSegments, ")")
 
 			for _, segment := range(nzbFiles.Segments) {
-				logger.Print("[MAIN] Queuing", segment)
+				logger.Print("[MAIN] Queuing ", segment)
 				join.SegmentMap[segment.Segment] = numSegments
 				segment.Group = nzbFiles.Groups[0]
 				download.Queue <- segment
 			}
 		}
 
-		logger.Print("[MAIN] Waiting")
+		logger.Print("[MAIN] downloadWait")
 		downloadWait.Wait()
+		logger.Print("[MAIN] decodeWait")
 		decodeWait.Wait()
 
 		join.JoinAll()
+		logger.Print("[MAIN] joinWait")
 		joinWait.Wait()
 
 		progress.Done = true
