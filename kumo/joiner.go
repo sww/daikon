@@ -40,11 +40,6 @@ func InitJoiner(w *sync.WaitGroup) *Joiner {
 
 func (j *Joiner) Run() {
 	j.Logger.Printf("[JOINER] Joiner.Run()")
-	if _, err := os.Stat(j.DownloadPath); os.IsNotExist(err) {
-		j.Logger.Print("[JOINER] Created directory", j.DownloadPath)
-		os.Mkdir(j.DownloadPath, 0775)
-	}
-
 	for {
 		select {
 		case <-j.Stop:
