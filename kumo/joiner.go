@@ -82,9 +82,9 @@ func (j *Joiner) JoinAll() {
 	j.Logger.Printf("[JOINER] j.Map: %+v", j.Map)
 	for k, tracker := range j.Map {
 		if tracker.current != tracker.expected {
-			// If a segment is broken, we call Done() before we get to join,
-			// so add to the wait group the number of broken segments so that
-			// we Done() calls don't go negative.
+			// Since join() calls Done() `count` times, and if a segment
+			// in a file is broken, the WaitGroup would be negative, so
+			// we Add() the difference to prevent a negative WaitGroup.
 			j.Wait.Add(tracker.expected - tracker.current)
 			j.join(k, tracker.expected)
 		}
