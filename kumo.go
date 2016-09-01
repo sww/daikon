@@ -21,7 +21,7 @@ func main() {
 
 	configFile, err := os.Open(*configName)
 	if err != nil {
-		log.Fatal("Error opening config file: %v\n", err)
+		log.Fatalf("Error opening config file: %v\n", err)
 	}
 
 	config, err := kumo.GetConfig(configFile)
