@@ -44,14 +44,14 @@ func main() {
 		}
 	}
 
-	for _, filename := range(files) {
+	download, err := kumo.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, downloadWait)
+	if err != nil {
+		log.Fatalf("Failed to InitDownload, with error: %v\n", err)
+	}
+
+	for _, filename := range files {
 		if _, err := os.Stat(filename); err != nil {
 			continue
-		}
-
-		download, err := kumo.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, downloadWait)
-		if err != nil {
-			log.Fatalf("Failed to InitDownload, with error: %v\n", err)
 		}
 
 		decodeWait := new(sync.WaitGroup)
