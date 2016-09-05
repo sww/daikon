@@ -78,6 +78,10 @@ func (j *Joiner) Run() {
 }
 
 func (j *Joiner) JoinAll() {
+	if len(j.Map) == 0 {
+		return
+	}
+
 	j.Logger.Print("[JOINER] JoinAll()")
 	j.Logger.Printf("[JOINER] j.Map: %+v", j.Map)
 	for k, tracker := range j.Map {
