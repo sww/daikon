@@ -103,7 +103,7 @@ func main() {
 		logger.Printf("[MAIN] Creating download path: '%v'", join.DownloadPath)
 		os.Mkdir(join.DownloadPath, 0775)
 
-		for _, nzbFiles := range(nzb.Files) {
+		for _, nzbFiles := range nzb.Files {
 			logger.Printf("[MAIN] Size: %v", nzb.Size())
 
 			progress.Total = nzb.Size()
@@ -112,9 +112,9 @@ func main() {
 			downloadWait.Add(numSegments)
 			logger.Print("[MAIN] Adding(", numSegments, ")")
 
-			for _, segment := range(nzbFiles.Segments) {
+			for _, segment := range nzbFiles.Segments {
 				logger.Print("[MAIN] Queuing ", segment)
-				join.SegmentMap[segment.Segment] = numSegments
+				join.SetSegmentCount(segment.Segment, numSegments)
 				segment.Group = nzbFiles.Groups[0]
 				download.Queue <- segment
 			}

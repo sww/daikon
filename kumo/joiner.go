@@ -20,23 +20,37 @@ type Joiner struct {
 	DownloadPath string
 	Stop         chan bool
 	Queue        chan *DecodedPart
-	SegmentMap   map[string]int
 	Map          map[string]*fileTracker
 	Logger       *dumblog.DumbLog
 	TempPath     string
 	Wait         *sync.WaitGroup
 	mu           sync.Mutex
+	segmentCount map[string]int
 }
 
 func InitJoiner(w *sync.WaitGroup) *Joiner {
 	return &Joiner{
 		DownloadPath: "",
-		SegmentMap:   make(map[string]int),
 		Map:          make(map[string]*fileTracker),
 		Queue:        make(chan *DecodedPart),
 		Stop:         make(chan bool, 1),
 		Wait:         w,
+		segmentCount: make(map[string]int),
 	}
+}
+
+func (j *Joiner) SetSegmentCount(name string, count int) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	j.segmentCount[name] = count
+}
+
+func (j *Joiner) deleteSegmentCount(name string) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	delete(j.segmentCount, name)
 }
 
 func (j *Joiner) Run() {
@@ -54,16 +68,14 @@ func (j *Joiner) Run() {
 
 				tracker = new(fileTracker)
 				tracker.current = 0
-				tracker.expected = j.SegmentMap[part.SegmentName]
+				tracker.expected = j.segmentCount[part.SegmentName]
 				j.mu.Lock()
 				j.Map[part.Name] = tracker
 				j.mu.Unlock()
 			}
 
-			j.mu.Lock()
-			delete(j.SegmentMap, part.SegmentName)
-			j.mu.Unlock()
-			
+			j.deleteSegmentCount(part.SegmentName)
+
 			tracker.current++
 			j.Logger.Print("[JOINER] tracker.current: ", tracker.current, ", tracker.expected: ", tracker.expected)
 
