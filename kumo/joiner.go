@@ -61,28 +61,36 @@ func (j *Joiner) Run() {
 			j.Logger.Printf("[JOINER] Joiner.Run() stopping")
 			return
 		case part := <-j.Queue:
-			j.Wait.Add(1)
-			tracker, exists := j.Map[part.Name]
-			if !exists {
-				j.Logger.Print("[JOINER] Part not in Map")
+			go func() {
+				defer j.Logger.Print("[JOINER] Done()")
+				defer j.Wait.Done()
 
-				tracker = new(fileTracker)
-				tracker.current = 0
-				tracker.expected = j.segmentCount[part.SegmentName]
-				j.mu.Lock()
-				j.Map[part.Name] = tracker
-				j.mu.Unlock()
-			}
+				tracker, exists := j.Map[part.Name]
+				if !exists {
+					j.Logger.Print("[JOINER] Part not in Map")
 
-			j.deleteSegmentCount(part.SegmentName)
+					tracker = new(fileTracker)
+					tracker.current = 0
+					tracker.expected = j.segmentCount[part.SegmentName]
+					j.mu.Lock()
+					j.Map[part.Name] = tracker
+					j.mu.Unlock()
+				}
 
-			tracker.current++
-			j.Logger.Print("[JOINER] tracker.current: ", tracker.current, ", tracker.expected: ", tracker.expected)
+				j.deleteSegmentCount(part.SegmentName)
 
-			if tracker.expected == tracker.current {
-				j.Logger.Print("[JOINER] expected == current")
-				go j.join(part.Name, tracker.expected)
-			}
+				tracker.current++
+				j.Logger.Print("[JOINER] tracker.current: ", tracker.current, ", tracker.expected: ", tracker.expected)
+
+				if tracker.expected == tracker.current {
+					j.Logger.Print("[JOINER] expected == current")
+					j.Wait.Add(1)
+					j.Logger.Print("[JOINER] Add(1)")
+					j.join(part.Name, tracker.expected)
+					j.Wait.Done()
+					j.Logger.Print("[JOINER] Done()!")
+				}
+			}()
 		default:
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -98,10 +106,6 @@ func (j *Joiner) JoinAll() {
 	j.Logger.Printf("[JOINER] j.Map: %+v", j.Map)
 	for k, tracker := range j.Map {
 		if tracker.current != tracker.expected {
-			// Since join() calls Done() `count` times, and if a segment
-			// in a file is broken, the WaitGroup would be negative, so
-			// we Add() the difference to prevent a negative WaitGroup.
-			j.Wait.Add(tracker.expected - tracker.current)
 			j.join(k, tracker.expected)
 		}
 	}
@@ -112,12 +116,6 @@ func (j *Joiner) join(filename string, count int) {
 	fullFile, err := os.Create(fullFilename)
 	defer fullFile.Close()
 
-	defer func() {
-		j.Logger.Printf("[JOINER] Calling Done() %v times", count)
-		for i := 0; i < count; i++ {
-			j.Wait.Done()
-		}
-	}()
 	defer func() {
 		j.mu.Lock()
 		delete(j.Map, filename)

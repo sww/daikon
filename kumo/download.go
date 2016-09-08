@@ -45,14 +45,14 @@ func (d *Download) Run() {
 			d.Logger.Print("[DOWNLOAD] Run() got segment ", segment)
 			go func() {
 				defer d.Progress.Add(segment.Bytes)
-				defer d.Wait.Done()
 
 				connection := <-d.ConnectionPool.connections
 				segmentName, err := d.download(segment.Segment, segment.Group, &connection)
 
 				if err != nil {
 					d.Progress.isBroken = true
-					d.Logger.Print("[DOWNLOAD] Download err ", err)
+					d.Logger.Printf("[DOWNLOAD] Done() because of err: %v", err)
+					d.Wait.Done()
 					return
 				}
 

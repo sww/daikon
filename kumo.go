@@ -35,7 +35,7 @@ func main() {
 	}
 
 	logger := dumblog.DumbLog{Debug: *debug}
-	downloadWait := new(sync.WaitGroup)
+	wait := new(sync.WaitGroup)
 
 	// Make sure root directories are there.
 	if _, err = os.Stat(config.Temp); err != nil {
@@ -44,7 +44,7 @@ func main() {
 		}
 	}
 
-	download, err := kumo.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, downloadWait)
+	download, err := kumo.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, wait)
 	if err != nil {
 		log.Fatalf("Failed to InitDownload, with error: %v\n", err)
 	}
@@ -54,11 +54,8 @@ func main() {
 			continue
 		}
 
-		decodeWait := new(sync.WaitGroup)
-		decode := kumo.InitDecode(decodeWait)
-
-		joinWait := new(sync.WaitGroup)
-		join := kumo.InitJoiner(joinWait)
+		decode := kumo.InitDecode(wait)
+		join := kumo.InitJoiner(wait)
 
 		download.DecodeQueue = decode.Queue
 		decode.JoinQueue = join.Queue
@@ -109,7 +106,7 @@ func main() {
 			progress.Total = nzb.Size()
 
 			numSegments := len(nzbFiles.Segments)
-			downloadWait.Add(numSegments)
+			wait.Add(numSegments)
 			logger.Print("[MAIN] Adding(", numSegments, ")")
 
 			for _, segment := range nzbFiles.Segments {
@@ -120,14 +117,9 @@ func main() {
 			}
 		}
 
-		logger.Print("[MAIN] downloadWait")
-		downloadWait.Wait()
-		logger.Print("[MAIN] decodeWait")
-		decodeWait.Wait()
-
+		logger.Printf("[MAIN] wait.Wait()")
+		wait.Wait()
 		join.JoinAll()
-		logger.Print("[MAIN] joinWait")
-		joinWait.Wait()
 
 		progress.Done = true
 		progress.Wait.Wait()

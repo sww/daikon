@@ -44,14 +44,13 @@ func (d *Decode) Run() {
 			d.Logger.Print("[DECODE] Decode stopped")
 			return
 		case segment := <-d.Queue:
-			d.Wait.Add(1)
 			d.Logger.Printf("[DECODE] Decode got %v", segment)
 			go func() {
-				defer d.Wait.Done()
 				part, err := d.decode(segment)
 				if err != nil {
 					d.Progress.isBroken = true
-					d.Logger.Printf("[DECODE] Decode err:", err)
+					d.Logger.Printf("[DECODE] Done() because of err: %v", err)
+					d.Wait.Done()
 				} else {
 					_, segmentName := filepath.Split(segment)
 					d.JoinQueue <- &DecodedPart{part, segmentName}
