@@ -71,8 +71,8 @@ func (j *Joiner) Run() {
 
 					tracker = new(fileTracker)
 					tracker.current = 0
-					tracker.expected = j.segmentCount[part.SegmentName]
 					j.mu.Lock()
+					tracker.expected = j.segmentCount[part.SegmentName]
 					j.Map[part.Name] = tracker
 					j.mu.Unlock()
 				}
