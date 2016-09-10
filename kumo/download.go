@@ -43,7 +43,7 @@ func (d *Download) Run() {
 			return
 		case segment := <-d.Queue:
 			d.Logger.Print("[DOWNLOAD] Run() got segment ", segment)
-			go func() {
+			go func(segment Segment) {
 				defer d.Progress.Add(segment.Bytes)
 
 				connection := <-d.ConnectionPool.connections
@@ -57,7 +57,7 @@ func (d *Download) Run() {
 				}
 
 				d.DecodeQueue <- segmentName
-			}()
+			}(segment)
 		default:
 			time.Sleep(100 * time.Millisecond)
 		}

@@ -45,7 +45,7 @@ func (d *Decode) Run() {
 			return
 		case segment := <-d.Queue:
 			d.Logger.Printf("[DECODE] Decode got %v", segment)
-			go func() {
+			go func(segment string) {
 				part, err := d.decode(segment)
 				if err != nil {
 					d.Progress.isBroken = true
@@ -55,7 +55,7 @@ func (d *Decode) Run() {
 					_, segmentName := filepath.Split(segment)
 					d.JoinQueue <- &DecodedPart{part, segmentName}
 				}
-			}()
+			}(segment)
 		default:
 			time.Sleep(100 * time.Millisecond)
 		}

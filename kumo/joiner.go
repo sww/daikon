@@ -61,7 +61,7 @@ func (j *Joiner) Run() {
 			j.Logger.Printf("[JOINER] Joiner.Run() stopping")
 			return
 		case part := <-j.Queue:
-			go func() {
+			go func(part *DecodedPart) {
 				defer j.Logger.Print("[JOINER] Done()")
 				defer j.Wait.Done()
 
@@ -90,7 +90,7 @@ func (j *Joiner) Run() {
 					j.Wait.Done()
 					j.Logger.Print("[JOINER] Done()!")
 				}
-			}()
+			}(part)
 		default:
 			time.Sleep(100 * time.Millisecond)
 		}
