@@ -15,6 +15,7 @@ import (
 func main() {
 	configName := flag.String("config", "config.json", "config file")
 	debug := flag.Bool("debug", false, "show debug statements")
+	debugFile := flag.String("debugFile", "", "write debug statments to debugFile")
 	quiet := flag.Bool("quiet", false, "hide the progress output")
 
 	flag.Parse()
@@ -35,6 +36,14 @@ func main() {
 	}
 
 	logger := dumblog.DumbLog{Debug: *debug}
+	if *debugFile != "" {
+		df, err := os.Create(*debugFile)
+		if err != nil {
+			log.Fatalf("Error opening debug file: %v", err)
+		}
+		logger.SetOutput(df)
+		logger.Debug = true
+	}
 	wait := new(sync.WaitGroup)
 
 	// Make sure root directories are there.
