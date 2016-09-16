@@ -27,11 +27,9 @@ type Segment struct {
 
 func (n *NZB) Size() int {
 	size := 0
-	for i := 0; i < len(n.Files); i++ {
-		files := n.Files[i]
-
-		for j := 0; j < len(files.Segments); j++ {
-			size += files.Segments[j].Bytes
+	for _, file := range n.Files {
+		for _, segment := range file.Segments {
+			size += segment.Bytes
 		}
 	}
 
