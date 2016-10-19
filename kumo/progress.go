@@ -91,14 +91,15 @@ func secondsToHuman(interval int) string {
 }
 
 type Progress struct {
-	Current  int
-	Total    int
-	Wait     *sync.WaitGroup
-	Stop     chan bool
-	Done     bool
-	isBroken bool
-	mu       sync.Mutex
-	start    int64
+	Current        int
+	Total          int
+	Wait           *sync.WaitGroup
+	Stop           chan bool
+	Done           bool
+	brokenSegments int
+	totalSegments  int
+	mu             sync.Mutex
+	start          int64
 }
 
 func InitProgress() *Progress {
@@ -112,7 +113,18 @@ func (p *Progress) Add(bytes int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	p.totalSegments += 1
 	p.Current += bytes
+}
+
+func (p *Progress) incrBroken() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.brokenSegments += 1
+}
+
+func (p *Progress) isBroken() bool {
+	return p.brokenSegments > 0
 }
 
 func (p *Progress) elapsed() int {
@@ -153,6 +165,16 @@ func (p *Progress) percentage() string {
 	return fmt.Sprintf("%.1f%%", percentage*100)
 }
 
+func (p *Progress) printBroken() {
+	// ✘ 524.25KB/524.25KB 87.37KB/s 100% ↯ 6s
+	// ┗━➤ 2/3 segments broken!
+	suffix := ""
+	if p.totalSegments > 1 {
+		suffix = "s"
+	}
+	fmt.Printf("\n%s %d/%d segment%s broken!", red("┗━➤"), p.brokenSegments, p.totalSegments, suffix)
+}
+
 func (p *Progress) printProgress(prefix, current, total, speed, percent, separator, _time string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -184,17 +206,20 @@ func (p *Progress) Run() {
 		if p.Total > 0 && p.Current >= p.Total && p.Done {
 			total := ByteSize(p.Total).String()
 			prefix := green("✔")
-			if p.isBroken {
+			if p.isBroken() {
 				prefix = red("✘")
 			}
 			// ✔ 396.86KB/396.86KB 30.53KB/s 100% ↯ 32s
 			p.printProgress(prefix, total, total, ByteSize(p.speed()).String(), "100%", "↯", secondsToHuman(p.elapsed()))
+			if p.isBroken() {
+				p.printBroken()
+			}
 			fmt.Println()
 			return
 		}
 
 		prefix := "↳"
-		if p.isBroken {
+		if p.isBroken() {
 			prefix = red("↳")
 		}
 
