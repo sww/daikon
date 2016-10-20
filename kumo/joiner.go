@@ -17,25 +17,25 @@ type fileTracker struct {
 }
 
 type Joiner struct {
-	DownloadPath string
-	Stop         chan bool
-	Queue        chan *DecodedPart
-	Map          map[string]*fileTracker
-	Logger       *dumblog.DumbLog
-	TempPath     string
-	Wait         *sync.WaitGroup
-	mu           sync.Mutex
-	segmentCount map[string]int
+	DownloadPath   string
+	Stop           chan bool
+	Queue          chan *DecodedPart
+	Logger         *dumblog.DumbLog
+	TempPath       string
+	mu             sync.Mutex
+	segmentCount   map[string]int
+	segmentTracker map[string]*fileTracker
+	wait           *sync.WaitGroup
 }
 
 func InitJoiner(w *sync.WaitGroup) *Joiner {
 	return &Joiner{
-		DownloadPath: "",
-		Map:          make(map[string]*fileTracker),
-		Queue:        make(chan *DecodedPart),
-		Stop:         make(chan bool, 1),
-		Wait:         w,
-		segmentCount: make(map[string]int),
+		DownloadPath:   "",
+		Queue:          make(chan *DecodedPart),
+		Stop:           make(chan bool, 1),
+		segmentTracker: make(map[string]*fileTracker),
+		segmentCount:   make(map[string]int),
+		wait:           w,
 	}
 }
 
@@ -63,17 +63,20 @@ func (j *Joiner) Run() {
 		case part := <-j.Queue:
 			go func(part *DecodedPart) {
 				defer j.Logger.Print("[JOINER] Done()")
-				defer j.Wait.Done()
+				defer j.wait.Done()
 
-				tracker, exists := j.Map[part.Name]
+				j.mu.Lock()
+				tracker, exists := j.segmentTracker[part.Name]
+				j.mu.Unlock()
+
 				if !exists {
-					j.Logger.Print("[JOINER] Part not in Map")
+					j.Logger.Print("[JOINER] Part not in segmentTracker")
 
 					tracker = new(fileTracker)
 					tracker.current = 0
 					j.mu.Lock()
 					tracker.expected = j.segmentCount[part.SegmentName]
-					j.Map[part.Name] = tracker
+					j.segmentTracker[part.Name] = tracker
 					j.mu.Unlock()
 				}
 
@@ -84,10 +87,10 @@ func (j *Joiner) Run() {
 
 				if tracker.expected == tracker.current {
 					j.Logger.Print("[JOINER] expected == current")
-					j.Wait.Add(1)
+					j.wait.Add(1)
 					j.Logger.Print("[JOINER] Add(1)")
 					j.join(part.Name, tracker.expected)
-					j.Wait.Done()
+					j.wait.Done()
 					j.Logger.Print("[JOINER] Done()!")
 				}
 			}(part)
@@ -98,13 +101,13 @@ func (j *Joiner) Run() {
 }
 
 func (j *Joiner) JoinAll() {
-	if len(j.Map) == 0 {
+	if len(j.segmentTracker) == 0 {
 		return
 	}
 
 	j.Logger.Print("[JOINER] JoinAll()")
-	j.Logger.Printf("[JOINER] j.Map: %+v", j.Map)
-	for k, tracker := range j.Map {
+	j.Logger.Printf("[JOINER] j.segmentTracker: %+v", j.segmentTracker)
+	for k, tracker := range j.segmentTracker {
 		if tracker.current != tracker.expected {
 			j.join(k, tracker.expected)
 		}
@@ -118,7 +121,7 @@ func (j *Joiner) join(filename string, count int) {
 
 	defer func() {
 		j.mu.Lock()
-		delete(j.Map, filename)
+		delete(j.segmentTracker, filename)
 		j.mu.Unlock()
 	}()
 
