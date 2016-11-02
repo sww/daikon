@@ -19,14 +19,14 @@ type File struct {
 }
 
 type Segment struct {
-	Bytes   int    `xml:"bytes,attr"`
+	Bytes   int64  `xml:"bytes,attr"`
 	Number  int    `xml:"number,attr"`
 	Segment string `xml:",chardata"`
 	Group   string
 }
 
-func (n *NZB) Size() int {
-	size := 0
+func (n *NZB) Size() int64 {
+	size := int64(0)
 	for _, file := range n.Files {
 		for _, segment := range file.Segments {
 			size += segment.Bytes

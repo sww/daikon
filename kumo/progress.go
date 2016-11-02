@@ -91,11 +91,12 @@ func secondsToHuman(interval int) string {
 }
 
 type Progress struct {
-	Current        int
-	Total          int
 	Wait           *sync.WaitGroup
 	Stop           chan bool
 	Done           bool
+	brokenSize     int64
+	currentSize    int64
+	totalSize      int64
 	brokenSegments int
 	totalSegments  int
 	mu             sync.Mutex
@@ -109,18 +110,23 @@ func InitProgress() *Progress {
 	}
 }
 
-func (p *Progress) Add(bytes int) {
+func (p *Progress) SetTotalSize(size int64) {
+	p.totalSize = size
+}
+
+func (p *Progress) Add(bytes int64) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	p.totalSegments += 1
-	p.Current += bytes
+	p.currentSize += bytes
 }
 
-func (p *Progress) incrBroken() {
+func (p *Progress) addBroken(bytes int64) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.brokenSegments += 1
+	p.brokenSize += bytes
 }
 
 func (p *Progress) isBroken() bool {
@@ -137,14 +143,14 @@ func (p *Progress) elapsed() int {
 
 func (p *Progress) speed() float64 {
 	elapsed := p.elapsed()
-	return float64(p.Current) / float64(elapsed)
+	return float64(p.currentSize) / float64(elapsed)
 }
 
 func (p *Progress) eta() int {
 	if p.speed() == 0 {
 		return 0
 	} else {
-		s := int(math.Ceil(float64(p.Total-p.Current) / p.speed()))
+		s := int(math.Ceil(float64(p.totalSize-p.currentSize) / p.speed()))
 		return s
 	}
 }
@@ -159,23 +165,23 @@ func (p *Progress) etaString() string {
 
 func (p *Progress) percentage() string {
 	percentage := 0.0
-	if p.Total > 0 {
-		percentage = (float64(p.Current) / float64(p.Total))
+	if p.totalSize > 0 {
+		percentage = (float64(p.currentSize) / float64(p.totalSize))
 	}
 	return fmt.Sprintf("%.1f%%", percentage*100)
 }
 
 func (p *Progress) printBroken() {
 	// ✘ 524.25KB/524.25KB 87.37KB/s 100% ↯ 6s
-	// ┗━➤ 2/3 segments broken!
+	// ┗━➤ 1.2MB/3.4MB (2/3) segments broken!
 	suffix := ""
 	if p.totalSegments > 1 {
 		suffix = "s"
 	}
-	fmt.Printf("\n%s %d/%d segment%s broken!", red("┗━➤"), p.brokenSegments, p.totalSegments, suffix)
+	fmt.Printf("\n%s %s/%s (%d/%d) segment%s broken!", red("┗━➤"), ByteSize(p.brokenSize).String(), ByteSize(p.totalSize).String(), p.brokenSegments, p.totalSegments, suffix)
 }
 
-func (p *Progress) printProgress(prefix, current, total, speed, percent, separator, _time string) {
+func (p *Progress) printProgress(prefix, currentSize, total, speed, percent, separator, _time string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -184,7 +190,7 @@ func (p *Progress) printProgress(prefix, current, total, speed, percent, separat
 		println(err)
 	}
 
-	progress := fmt.Sprintf("%s %s/%s %s/s %s %s %s", prefix, current, total, speed, percent, separator, _time)
+	progress := fmt.Sprintf("%s %s/%s %s/s %s %s %s", prefix, currentSize, total, speed, percent, separator, _time)
 	padding := strings.Repeat(" ", cols-len(progress))
 
 	fmt.Print("\r", progress, padding)
@@ -203,8 +209,8 @@ func (p *Progress) Run() {
 		default:
 		}
 
-		if p.Total > 0 && p.Current >= p.Total && p.Done {
-			total := ByteSize(p.Total).String()
+		if p.totalSize > 0 && p.currentSize >= p.totalSize && p.Done {
+			total := ByteSize(p.totalSize).String()
 			prefix := green("✔")
 			if p.isBroken() {
 				prefix = red("✘")
@@ -224,7 +230,7 @@ func (p *Progress) Run() {
 		}
 
 		// ↳ 146.92KB/396.86KB 13.36KB/s 37.0% ↦ 19s
-		p.printProgress(prefix, ByteSize(p.Current).String(), ByteSize(p.Total).String(), ByteSize(p.speed()).String(), p.percentage(), "↦", p.etaString())
+		p.printProgress(prefix, ByteSize(p.currentSize).String(), ByteSize(p.totalSize).String(), ByteSize(p.speed()).String(), p.percentage(), "↦", p.etaString())
 
 		time.Sleep(1 * time.Second)
 	}

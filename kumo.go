@@ -112,7 +112,7 @@ func main() {
 		for _, nzbFiles := range nzb.Files {
 			logger.Printf("[MAIN] Size: %v", nzb.Size())
 
-			progress.Total = nzb.Size()
+			progress.SetTotalSize(nzb.Size())
 
 			numSegments := len(nzbFiles.Segments)
 			wait.Add(numSegments)

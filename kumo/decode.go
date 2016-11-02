@@ -48,7 +48,8 @@ func (d *Decode) Run() {
 			go func(segment string) {
 				part, err := d.decode(segment)
 				if err != nil {
-					d.Progress.incrBroken()
+					fileStat, _ := os.Stat(segment)
+					d.Progress.addBroken(fileStat.Size())
 					d.Logger.Printf("[DECODE] Done() because of err: %v", err)
 					d.Wait.Done()
 				} else {
@@ -87,7 +88,7 @@ func (d *Decode) decode(filename string) (*yenc.Part, error) {
 	go func() {
 		if !checksum(part.Body, part.CRC32) {
 			d.Logger.Print("[DECODE] Checksums did not match")
-			d.Progress.incrBroken()
+			d.Progress.addBroken(part.EndSize - part.BeginSize)
 		}
 	}()
 
