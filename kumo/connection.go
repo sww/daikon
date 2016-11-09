@@ -5,12 +5,12 @@ import (
 	"log"
 	"sync"
 
-	"github.com/dustin/go-nntp/client"
+	"github.com/sww/kumo/nntp"
 )
 
 type Connection struct {
 	group  string
-	client *nntpclient.Client
+	client *nntp.NNTP
 }
 
 type ConnectionPool struct {
@@ -33,13 +33,13 @@ func InitConnectionPool(server, username, password string, port, connections int
 			defer wait.Done()
 
 			connection := new(Connection)
-			client, err := nntpclient.New("tcp", fmt.Sprintf("%v:%v", server, port))
+			client, err := nntp.New("tcp", fmt.Sprintf("%v:%v", server, port))
 			if err != nil {
 				log.Printf("Error Connecting to \"%v\"", server)
 				errors = append(errors, err)
 			}
 
-			msg, err := client.Authenticate(username, password)
+			msg, err := client.Auth(username, password)
 			if err != nil {
 				log.Printf("Problem authenticating, got msg: %v", msg)
 				errors = append(errors, err)
