@@ -3,6 +3,7 @@ package kumo
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/dustin/go-nntp/client"
 )
@@ -22,25 +23,41 @@ func InitConnectionPool(server, username, password string, port, connections int
 	pool.connections = make(chan Connection, connections)
 	pool.size = connections
 
+	wait := new(sync.WaitGroup)
+	wait.Add(connections)
+
+	var errors []error
+
 	for i := 0; i < connections; i++ {
-		connection := new(Connection)
-		client, err := nntpclient.New("tcp", fmt.Sprintf("%v:%v", server, port))
-		if err != nil {
-			log.Printf("Error Connecting to \"%v\"", server)
-			return nil, err
-		}
+		go func() {
+			defer wait.Done()
 
-		msg, err := client.Authenticate(username, password)
-		if err != nil {
-			log.Printf("Problem authenticating, got msg: %v", msg)
-			return nil, err
-		}
+			connection := new(Connection)
+			client, err := nntpclient.New("tcp", fmt.Sprintf("%v:%v", server, port))
+			if err != nil {
+				log.Printf("Error Connecting to \"%v\"", server)
+				errors = append(errors, err)
+			}
 
-		connection.group = ""
-		connection.client = client
+			msg, err := client.Authenticate(username, password)
+			if err != nil {
+				log.Printf("Problem authenticating, got msg: %v", msg)
+				errors = append(errors, err)
+			}
 
-		pool.connections <- *connection
+			connection.group = ""
+			connection.client = client
+
+			pool.connections <- *connection
+		}()
 	}
 
-	return pool, nil
+	wait.Wait()
+
+	if len(errors) > 0 {
+		// Return an error if any connection failed for now.
+		return nil, errors[0]
+	} else {
+		return pool, nil
+	}
 }
