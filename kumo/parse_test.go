@@ -39,7 +39,7 @@ func Test_Size(t *testing.T) {
 		Files: []File{
 			{Poster: "poster", Subject: "subject", Date: 123, Groups: []string{"alt.group"}, Segments: []Segment{{Bytes: 11, Number: 1, Segment: "1@foo.com"}}}}}
 
-	want := 11
+	want := int64(11)
 	if want != nzb.Size() {
 		t.Errorf("Returned %+v, want %+v", nzb, &want)
 	}
