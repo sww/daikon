@@ -1,6 +1,7 @@
 package kumo
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -19,14 +20,13 @@ type ConnectionPool struct {
 }
 
 func InitConnectionPool(server, username, password string, port, connections int, ssl bool) (*ConnectionPool, error) {
-	pool := new(ConnectionPool)
-	pool.connections = make(chan Connection, connections)
-	pool.size = connections
+	pool := &ConnectionPool{
+		connections: make(chan Connection, connections),
+		size:        connections,
+	}
 
 	wait := new(sync.WaitGroup)
 	wait.Add(connections)
-
-	var errors []error
 
 	for i := 0; i < connections; i++ {
 		go func() {
@@ -36,13 +36,13 @@ func InitConnectionPool(server, username, password string, port, connections int
 			client, err := nntp.New("tcp", fmt.Sprintf("%v:%v", server, port), ssl)
 			if err != nil {
 				log.Printf("Error Connecting to \"%v\"", server)
-				errors = append(errors, err)
+				return
 			}
 
 			msg, err := client.Auth(username, password)
 			if err != nil {
 				log.Printf("Problem authenticating, got msg: %v", msg)
-				errors = append(errors, err)
+				return
 			}
 
 			connection.group = ""
@@ -54,10 +54,9 @@ func InitConnectionPool(server, username, password string, port, connections int
 
 	wait.Wait()
 
-	if len(errors) > 0 {
-		// Return an error if any connection failed for now.
-		return nil, errors[0]
-	} else {
-		return pool, nil
+	if len(pool.connections) < 1 {
+		return nil, errors.New("no connections available")
 	}
+
+	return pool, nil
 }
