@@ -53,7 +53,7 @@ func main() {
 		}
 	}
 
-	download, err := kumo.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, wait)
+	download, err := kumo.InitDownload(config.Host, config.Username, config.Password, config.Port, config.Connections, config.SSL, wait)
 	if err != nil {
 		log.Fatalf("Failed to InitDownload, with error: %v\n", err)
 	}

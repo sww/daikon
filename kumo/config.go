@@ -14,6 +14,7 @@ type Config struct {
 	Port        int
 	Temp        string
 	Download    string
+	SSL         bool
 }
 
 func GetConfig(f io.Reader) (*Config, error) {

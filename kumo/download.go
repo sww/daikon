@@ -21,8 +21,8 @@ type Download struct {
 	TempPath       string
 }
 
-func InitDownload(host, username, password string, port, connections int, w *sync.WaitGroup) (*Download, error) {
-	connectionPool, err := InitConnectionPool(host, username, password, port, connections)
+func InitDownload(host, username, password string, port, connections int, ssl bool, w *sync.WaitGroup) (*Download, error) {
+	connectionPool, err := InitConnectionPool(host, username, password, port, connections, ssl)
 	if err != nil {
 		return nil, err
 	}

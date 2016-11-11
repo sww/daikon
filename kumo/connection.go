@@ -18,7 +18,7 @@ type ConnectionPool struct {
 	connections chan Connection
 }
 
-func InitConnectionPool(server, username, password string, port, connections int) (*ConnectionPool, error) {
+func InitConnectionPool(server, username, password string, port, connections int, ssl bool) (*ConnectionPool, error) {
 	pool := new(ConnectionPool)
 	pool.connections = make(chan Connection, connections)
 	pool.size = connections
@@ -33,7 +33,7 @@ func InitConnectionPool(server, username, password string, port, connections int
 			defer wait.Done()
 
 			connection := new(Connection)
-			client, err := nntp.New("tcp", fmt.Sprintf("%v:%v", server, port))
+			client, err := nntp.New("tcp", fmt.Sprintf("%v:%v", server, port), ssl)
 			if err != nil {
 				log.Printf("Error Connecting to \"%v\"", server)
 				errors = append(errors, err)
