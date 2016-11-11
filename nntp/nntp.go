@@ -1,14 +1,34 @@
 package nntp
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"io"
 	"net/textproto"
 )
 
-func New(net, addr string) (*NNTP, error) {
-	conn, err := textproto.Dial(net, addr)
-	if err != nil {
-		return nil, err
+func New(net, addr string, ssl bool) (*NNTP, error) {
+	var conn *textproto.Conn
+	var err error
+	if ssl {
+		certPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+
+		config := tls.Config{RootCAs: certPool}
+
+		tlsConn, err := tls.Dial(net, addr, &config)
+		if err != nil {
+			return nil, err
+		}
+
+		conn = textproto.NewConn(tlsConn)
+	} else {
+		conn, err = textproto.Dial(net, addr)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	_, _, err = conn.ReadCodeLine(200)
