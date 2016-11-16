@@ -58,6 +58,8 @@ func main() {
 		log.Fatalf("Failed to InitDownload, with error: %v\n", err)
 	}
 
+	filter := kumo.NewFilter(config.Filters...)
+
 	for _, filename := range files {
 		if _, err := os.Stat(filename); err != nil {
 			continue
@@ -72,6 +74,7 @@ func main() {
 		download.Logger = &logger
 		decode.Logger = &logger
 		join.Logger = &logger
+		filter.Logger = &logger
 
 		progress := kumo.InitProgress()
 		download.Progress = progress
@@ -108,6 +111,10 @@ func main() {
 		os.Mkdir(download.TempPath, 0775)
 		logger.Printf("[MAIN] Creating download path: '%v'", join.DownloadPath)
 		os.Mkdir(join.DownloadPath, 0775)
+
+		if filter.HasFilters() {
+			nzb = filter.FilterNzb(nzb)
+		}
 
 		for _, nzbFiles := range nzb.Files {
 			logger.Printf("[MAIN] Size: %v", nzb.Size())

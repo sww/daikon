@@ -3,7 +3,8 @@
     "host": "localhost",
 	   "username": "user",
 	   "password": "pass",
-    "port": 5000,
+	   "port": 5000,
 	   "temp": "tmp",
-	   "download": "download"
+	   "download": "download",
+	   "filters": []
 }
