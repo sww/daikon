@@ -2,10 +2,14 @@ package kumo
 
 import (
 	"testing"
+
+	"github.com/sww/dumblog"
 )
 
 func TestFilter(t *testing.T) {
 	filter := NewFilter("foo", "[a-c]+")
+	filter.Logger = &dumblog.DumbLog{Debug: false}
+
 	testStrings := []string{
 		"foo",
 		"abcabc",
