@@ -35,7 +35,7 @@ func main() {
 		log.Fatalf("[MAIN] No files specified")
 	}
 
-	logger := dumblog.DumbLog{Debug: *debug}
+	logger := dumblog.New(*debug)
 	if *debugFile != "" {
 		df, err := os.Create(*debugFile)
 		if err != nil {
@@ -71,10 +71,10 @@ func main() {
 		download.DecodeQueue = decode.Queue
 		decode.JoinQueue = join.Queue
 
-		download.Logger = &logger
-		decode.Logger = &logger
-		join.Logger = &logger
-		filter.Logger = &logger
+		download.Logger = logger
+		decode.Logger = logger
+		join.Logger = logger
+		filter.Logger = logger
 
 		progress := kumo.InitProgress()
 		download.Progress = progress
