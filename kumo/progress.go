@@ -90,6 +90,13 @@ func secondsToHuman(interval int) string {
 	}
 }
 
+const (
+	PREFIX_DEFAULT         = "↳"
+	PREFIX_PAR2            = "🔧 "
+	PREFIX_COMPLETE_OK     = "✔"
+	PREFIX_COMPLETE_BROKEN = "✘"
+)
+
 type Progress struct {
 	Wait           *sync.WaitGroup
 	Stop           chan bool
@@ -101,12 +108,14 @@ type Progress struct {
 	totalSegments  int
 	mu             sync.Mutex
 	start          int64
+	prefix         string
 }
 
-func InitProgress() *Progress {
+func NewProgress() *Progress {
 	return &Progress{
-		Stop: make(chan bool, 1),
-		Wait: new(sync.WaitGroup),
+		Stop:   make(chan bool, 1),
+		Wait:   new(sync.WaitGroup),
+		prefix: PREFIX_DEFAULT,
 	}
 }
 
@@ -196,6 +205,14 @@ func (p *Progress) printProgress(prefix, currentSize, total, speed, percent, sep
 	fmt.Print("\r", progress, padding)
 }
 
+func (p *Progress) reset() {
+	p.brokenSize = 0
+	p.currentSize = 0
+	p.brokenSegments = 0
+	p.totalSegments = 0
+	p.start = 0
+}
+
 func (p *Progress) Run() {
 	p.Wait.Add(1)
 	defer p.Wait.Done()
@@ -211,9 +228,9 @@ func (p *Progress) Run() {
 
 		if p.totalSize > 0 && p.currentSize >= p.totalSize && p.Done {
 			total := ByteSize(p.totalSize).String()
-			prefix := green("✔")
+			prefix := green(PREFIX_COMPLETE_OK)
 			if p.isBroken() {
-				prefix = red("✘")
+				prefix = red(PREFIX_COMPLETE_BROKEN)
 			}
 			// ✔ 396.86KB/396.86KB 30.53KB/s 100% ↯ 32s
 			p.printProgress(prefix, total, total, ByteSize(p.speed()).String(), "100%", "↯", secondsToHuman(p.elapsed()))
@@ -224,9 +241,9 @@ func (p *Progress) Run() {
 			return
 		}
 
-		prefix := "↳"
+		prefix := p.prefix
 		if p.isBroken() {
-			prefix = red("↳")
+			prefix = red(prefix)
 		}
 
 		// ↳ 146.92KB/396.86KB 13.36KB/s 37.0% ↦ 19s

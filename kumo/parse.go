@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"io"
 	"io/ioutil"
+	"regexp"
 )
 
 type NZB struct {
@@ -16,6 +17,16 @@ type File struct {
 	Date     int       `xml:"date,attr"`
 	Groups   []string  `xml:"groups>group"`
 	Segments []Segment `xml:"segments>segment"`
+}
+
+func (f *File) Extension() string {
+	re := regexp.MustCompile("\\.\\w+")
+	matches := re.FindAllString(f.Subject, -1)
+	if len(matches) > 0 {
+		return matches[len(matches)-1]
+	}
+
+	return ""
 }
 
 type Segment struct {

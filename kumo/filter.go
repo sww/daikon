@@ -2,6 +2,7 @@ package kumo
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/sww/dumblog"
 )
@@ -28,7 +29,7 @@ func (f *Filter) HasFilters() bool {
 func (f *Filter) Filter(s string) bool {
 	for _, re := range f.regexps {
 		if re.MatchString(s) {
-			f.Logger.Printf("Regexp %v Matched %s", re, s)
+			f.Logger.Printf("[FILTER] Regexp %v Matched %q", re, s)
 			return true
 		}
 	}
@@ -49,4 +50,18 @@ func (f *Filter) FilterNzb(nzb *NZB) *NZB {
 	}
 
 	return &filteredNzb
+}
+
+func (f *Filter) Split(nzb *NZB, extension string) []*NZB {
+	var filtered NZB
+	var unfiltered NZB
+	for _, file := range nzb.Files {
+		if strings.EqualFold(file.Extension(), extension) {
+			f.Logger.Printf("[FILTER] Filtered out extension %q from subject %q", extension, file.Subject)
+			filtered.Files = append(filtered.Files, file)
+		} else {
+			unfiltered.Files = append(unfiltered.Files, file)
+		}
+	}
+	return []*NZB{&unfiltered, &filtered}
 }

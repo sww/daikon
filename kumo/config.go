@@ -7,6 +7,9 @@ import (
 )
 
 type Config struct {
+	Debug       bool
+	DebugFile   string
+	Quiet       bool
 	Connections int
 	Host        string
 	Username    string
