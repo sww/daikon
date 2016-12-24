@@ -99,7 +99,12 @@ func (k *Kumo) Get(filename string) error {
 
 	progress := NewProgress()
 
-	for _, nzb = range k.filter.Split(nzb, ".par2") {
+	nzbs := k.filter.Split(nzb, ".par2")
+	if k.config.PAR2 {
+		nzbs = nzbs[len(nzbs)-1:]
+	}
+
+	for _, nzb = range nzbs {
 		progress.SetTotalSize(nzb.Size())
 
 		k.download.Progress = progress

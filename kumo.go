@@ -13,6 +13,7 @@ func main() {
 	debug := flag.Bool("debug", false, "show debug statements")
 	debugFile := flag.String("debugFile", "", "write debug statments to debugFile")
 	quiet := flag.Bool("quiet", false, "hide the progress output")
+	par2 := flag.Bool("par2", false, "get only par2 files")
 
 	flag.Parse()
 
@@ -34,6 +35,7 @@ func main() {
 	config.Debug = *debug
 	config.DebugFile = *debugFile
 	config.Quiet = *quiet
+	config.PAR2 = *par2
 
 	kumo := kumo.New(config)
 	for _, filename := range files {

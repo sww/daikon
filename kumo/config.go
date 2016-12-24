@@ -19,6 +19,7 @@ type Config struct {
 	Download    string
 	SSL         bool
 	Filters     []string
+	PAR2        bool
 }
 
 func GetConfig(f io.Reader) (*Config, error) {
