@@ -100,7 +100,6 @@ const (
 type Progress struct {
 	Wait           *sync.WaitGroup
 	Stop           chan bool
-	done           bool
 	brokenSize     int64
 	currentSize    int64
 	totalSize      int64
@@ -138,12 +137,6 @@ func (p *Progress) addBroken(bytes int64) {
 	defer p.mu.Unlock()
 	p.brokenSegments += 1
 	p.brokenSize += bytes
-}
-
-func (p *Progress) Done() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.done = true
 }
 
 func (p *Progress) isBroken() bool {
@@ -237,10 +230,9 @@ func (p *Progress) Run() {
 		p.mu.Lock()
 		totalSize := p.totalSize
 		currentSize := p.currentSize
-		done := p.done
 		p.mu.Unlock()
 
-		if totalSize > 0 && currentSize >= totalSize && done {
+		if totalSize > 0 && currentSize >= totalSize {
 			total := ByteSize(totalSize).String()
 			prefix := green(PREFIX_COMPLETE_OK)
 			if p.isBroken() {
