@@ -100,7 +100,7 @@ const (
 type Progress struct {
 	Wait           *sync.WaitGroup
 	Stop           chan bool
-	Done           bool
+	done           bool
 	brokenSize     int64
 	currentSize    int64
 	totalSize      int64
@@ -120,6 +120,8 @@ func NewProgress() *Progress {
 }
 
 func (p *Progress) SetTotalSize(size int64) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	p.totalSize = size
 }
 
@@ -136,6 +138,12 @@ func (p *Progress) addBroken(bytes int64) {
 	defer p.mu.Unlock()
 	p.brokenSegments += 1
 	p.brokenSize += bytes
+}
+
+func (p *Progress) Done() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.done = true
 }
 
 func (p *Progress) isBroken() bool {
@@ -226,8 +234,14 @@ func (p *Progress) Run() {
 		default:
 		}
 
-		if p.totalSize > 0 && p.currentSize >= p.totalSize && p.Done {
-			total := ByteSize(p.totalSize).String()
+		p.mu.Lock()
+		totalSize := p.totalSize
+		currentSize := p.currentSize
+		done := p.done
+		p.mu.Unlock()
+
+		if totalSize > 0 && currentSize >= totalSize && done {
+			total := ByteSize(totalSize).String()
 			prefix := green(PREFIX_COMPLETE_OK)
 			if p.isBroken() {
 				prefix = red(PREFIX_COMPLETE_BROKEN)
@@ -247,7 +261,7 @@ func (p *Progress) Run() {
 		}
 
 		// ↳ 146.92KB/396.86KB 13.36KB/s 37.0% ↦ 19s
-		p.printProgress(prefix, ByteSize(p.currentSize).String(), ByteSize(p.totalSize).String(), ByteSize(p.speed()).String(), p.percentage(), "↦", p.etaString())
+		p.printProgress(prefix, ByteSize(currentSize).String(), ByteSize(totalSize).String(), ByteSize(p.speed()).String(), p.percentage(), "↦", p.etaString())
 
 		time.Sleep(1 * time.Second)
 	}

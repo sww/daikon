@@ -82,14 +82,19 @@ func (j *Joiner) Run() {
 
 				j.deleteSegmentCount(part.SegmentName)
 
+				j.mu.Lock()
 				tracker.current++
-				j.Logger.Print("[JOINER] tracker.current: ", tracker.current, ", tracker.expected: ", tracker.expected)
+				expected := tracker.expected
+				current := tracker.current
+				j.mu.Unlock()
 
-				if tracker.expected == tracker.current {
+				j.Logger.Print("[JOINER] tracker.current: ", current, ", tracker.expected: ", expected)
+
+				if expected == current {
 					j.Logger.Print("[JOINER] expected == current")
 					j.wait.Add(1)
 					j.Logger.Print("[JOINER] Add(1)")
-					j.join(part.Name, tracker.expected)
+					j.join(part.Name, expected)
 					j.wait.Done()
 					j.Logger.Print("[JOINER] Done()!")
 				}

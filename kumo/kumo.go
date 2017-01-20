@@ -120,7 +120,7 @@ func (k *Kumo) Get(filename string) error {
 		k.wait.Wait()
 		k.join.JoinAll()
 
-		progress.Done = true
+		progress.Done()
 		progress.Wait.Wait()
 
 		if !progress.isBroken() {
