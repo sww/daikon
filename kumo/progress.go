@@ -249,7 +249,7 @@ func (p *Progress) Run() {
 
 		prefix := p.prefix
 		if p.isBroken() {
-			prefix = red(prefix)
+			prefix = fmt.Sprintf("%s (%d/%d)", red(prefix), p.brokenSegments, p.totalSegments)
 		}
 
 		// ↳ 146.92KB/396.86KB 13.36KB/s 37.0% ↦ 19s
