@@ -40,6 +40,7 @@ func main() {
 	kumo := kumo.New(config)
 	for _, filename := range files {
 		if _, err := os.Stat(filename); err != nil {
+			log.Printf("\"%s\" does not exist.", filename)
 			continue
 		}
 		if kumo.Get(filename) != nil {
