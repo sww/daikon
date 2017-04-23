@@ -14,6 +14,7 @@ func main() {
 	debugFile := flag.String("debugFile", "", "write debug statments to debugFile")
 	quiet := flag.Bool("quiet", false, "hide the progress output")
 	par2 := flag.Bool("par2", false, "get only par2 files")
+	rm := flag.Bool("rm", false, "remove nzb file after download")
 
 	flag.Parse()
 
@@ -45,6 +46,9 @@ func main() {
 		}
 		if kumo.Get(filename) != nil {
 			log.Printf("Error: %v", err)
+		}
+		if *rm {
+			os.Remove(filename)
 		}
 	}
 
