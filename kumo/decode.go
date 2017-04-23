@@ -48,8 +48,9 @@ func (d *Decode) Run() {
 			go func(segment string) {
 				part, err := d.decode(segment)
 				if err != nil {
-					fileStat, _ := os.Stat(segment)
-					d.Progress.addBroken(fileStat.Size())
+					if fileStat, ok := os.Stat(segment); ok == nil {
+						d.Progress.addBroken(fileStat.Size())
+					}
 					d.Logger.Printf("[DECODE] Done() because of err: %v", err)
 					d.Wait.Done()
 				} else {
